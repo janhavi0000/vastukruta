@@ -1,11 +1,14 @@
 {
-  "name": "ecoconnect",
+  "name": "vastukruta",
   "version": "1.0.0",
-  "description": "EcoConnect - Community-Based E-Waste Collection Platform",
+  "description": "VASTUKRUTA — Architecture & Interior Design Studio Platform | Ar. Pranali Ghorpade",
   "scripts": {
     "dev:server": "npm --prefix server run dev",
     "dev:client": "npm --prefix client run dev",
     "seed": "npm --prefix server run seed",
-    "test": "npm --prefix server test"
-  }
+    "build": "npm --prefix client run build",
+    "start": "npm --prefix server start"
+  },
+  "author": "Vastukruta Architecture Studio",
+  "license": "ISC"
 }

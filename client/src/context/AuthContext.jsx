@@ -1,114 +1,68 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authService } from '../services/api';
+import { authAPI } from '../services/api';
 
-const AuthContext = createContext(null);
+const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('ecoconnect_user');
+    const saved = localStorage.getItem('vastukruta_user');
     return saved ? JSON.parse(saved) : null;
   });
-  const [recycler, setRecycler] = useState(() => {
-    const saved = localStorage.getItem('ecoconnect_recycler');
-    return saved ? JSON.parse(saved) : null;
-  });
-  const [token, setToken] = useState(() => localStorage.getItem('ecoconnect_token') || null);
+  const [token, setToken] = useState(() => localStorage.getItem('vastukruta_token') || null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const verifyAuth = async () => {
-      const storedToken = localStorage.getItem('ecoconnect_token');
+    const verifyUser = async () => {
+      const storedToken = localStorage.getItem('vastukruta_token');
       if (storedToken) {
         try {
-          const res = await authService.getMe();
-          setUser(res.data.data.user);
-          setRecycler(res.data.data.recycler || null);
-          localStorage.setItem('ecoconnect_user', JSON.stringify(res.data.data.user));
-          if (res.data.data.recycler) {
-            localStorage.setItem('ecoconnect_recycler', JSON.stringify(res.data.data.recycler));
-          }
+          const res = await authAPI.getMe();
+          setUser(res.data.user);
+          localStorage.setItem('vastukruta_user', JSON.stringify(res.data.user));
         } catch (err) {
-          console.warn('[AuthContext] Session expired or invalid:', err.message);
+          console.error('[Auth Error] Token verification failed:', err);
           logout();
         }
       }
       setLoading(false);
     };
 
-    verifyAuth();
+    verifyUser();
   }, []);
 
   const login = async (email, password) => {
-    const res = await authService.login({ email, password });
-    const { token: newToken, user: newUser, recycler: newRecycler } = res.data.data;
+    try {
+      const res = await authAPI.login({ email, password });
+      const { token: receivedToken, user: receivedUser } = res.data;
 
-    setToken(newToken);
-    setUser(newUser);
-    setRecycler(newRecycler || null);
+      setToken(receivedToken);
+      setUser(receivedUser);
+      localStorage.setItem('vastukruta_token', receivedToken);
+      localStorage.setItem('vastukruta_user', JSON.stringify(receivedUser));
 
-    localStorage.setItem('ecoconnect_token', newToken);
-    localStorage.setItem('ecoconnect_user', JSON.stringify(newUser));
-    if (newRecycler) {
-      localStorage.setItem('ecoconnect_recycler', JSON.stringify(newRecycler));
-    } else {
-      localStorage.removeItem('ecoconnect_recycler');
+      return { success: true, message: res.data.message };
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Login failed. Please check your credentials.';
+      return { success: false, message: msg };
     }
-
-    return res.data;
-  };
-
-  const register = async (registrationData) => {
-    const res = await authService.register(registrationData);
-    const { token: newToken, user: newUser, recycler: newRecycler } = res.data.data;
-
-    setToken(newToken);
-    setUser(newUser);
-    setRecycler(newRecycler || null);
-
-    localStorage.setItem('ecoconnect_token', newToken);
-    localStorage.setItem('ecoconnect_user', JSON.stringify(newUser));
-    if (newRecycler) {
-      localStorage.setItem('ecoconnect_recycler', JSON.stringify(newRecycler));
-    }
-
-    return res.data;
   };
 
   const logout = () => {
     setToken(null);
     setUser(null);
-    setRecycler(null);
-    localStorage.removeItem('ecoconnect_token');
-    localStorage.removeItem('ecoconnect_user');
-    localStorage.removeItem('ecoconnect_recycler');
-  };
-
-  const refreshUser = async () => {
-    try {
-      const res = await authService.getMe();
-      setUser(res.data.data.user);
-      setRecycler(res.data.data.recycler || null);
-      localStorage.setItem('ecoconnect_user', JSON.stringify(res.data.data.user));
-      if (res.data.data.recycler) {
-        localStorage.setItem('ecoconnect_recycler', JSON.stringify(res.data.data.recycler));
-      }
-    } catch (err) {
-      console.error('[AuthContext] Failed to refresh user:', err);
-    }
+    localStorage.removeItem('vastukruta_token');
+    localStorage.removeItem('vastukruta_user');
   };
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        recycler,
         token,
         loading,
-        isAuthenticated: !!user,
+        isAuthenticated: !!token,
         login,
-        register,
         logout,
-        refreshUser
       }}
     >
       {children}

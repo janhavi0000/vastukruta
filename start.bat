@@ -1,22 +1,23 @@
 @echo off
-title EcoConnect Platform Starter
+title VASTUKRUTA Architecture Platform Starter
 echo ========================================================
-echo   EcoConnect Full-Stack Application Launcher
+echo   VASTUKRUTA - AR. PRANALI GHORPADE STUDIO LAUNCHER
 echo ========================================================
 echo.
 echo 1. Starting Backend Express Server (Port 5000)...
-start "EcoConnect Server (Port 5000)" cmd /k "cd /d \"%~dp0server\" && npm run dev"
+start "Vastukruta API Server (Port 5000)" cmd /k "cd /d \"%~dp0server\" && npm start"
 
 echo 2. Starting Frontend React Client (Port 5173)...
-start "EcoConnect Client (Port 5173)" cmd /k "cd /d \"%~dp0client\" && npm run dev"
+start "Vastukruta Web Client (Port 5173)" cmd /k "cd /d \"%~dp0client\" && npm run dev"
 
 echo.
 echo ========================================================
-echo Both backend and frontend servers have been launched!
+echo   Vastukruta servers launched successfully!
 echo.
-echo   Frontend App:   http://localhost:5173
-echo   Backend API:    http://localhost:5000/api
-echo   Database:       MongoDB (localhost:27017)
+echo   Public Studio Website:  http://localhost:5173
+echo   Admin Architect Portal: http://localhost:5173/admin/login
+echo   Backend REST API:       http://localhost:5000/api
+echo   Health Status:          http://localhost:5000/api/health
 echo ========================================================
 echo.
 timeout /t 3 >nul

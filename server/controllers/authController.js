@@ -1,114 +1,34 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const Recycler = require('../models/Recycler');
 
 const generateToken = (id) => {
-  const secret = process.env.JWT_SECRET || 'ecoconnect_jwt_super_secret_key_college_cep_2026';
-  return jwt.sign({ id }, secret, {
-    expiresIn: process.env.JWT_EXPIRES_IN || '7d'
-  });
+  return jwt.sign(
+    { id },
+    process.env.JWT_SECRET || 'vastukruta_secret_key_architectural_studio_2026_secure',
+    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+  );
 };
 
-// @desc    Register a new user or recycler
-// @route   POST /api/auth/register
-// @access  Public
-const register = async (req, res, next) => {
-  try {
-    const {
-      name,
-      email,
-      phone,
-      password,
-      role = 'user',
-      organizationName,
-      address,
-      serviceAreas,
-      supportedCategories,
-      description
-    } = req.body;
-
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: 'An account with this email address already exists.'
-      });
-    }
-
-    const user = await User.create({
-      name,
-      email: email.toLowerCase(),
-      phone,
-      password,
-      role
-    });
-
-    let recyclerData = null;
-
-    // If registering as a recycler, create the linked Recycler profile with PENDING verification status
-    if (role === 'recycler') {
-      const recycler = await Recycler.create({
-        userId: user._id,
-        organizationName: organizationName || `${name}'s E-Waste Center`,
-        contactPerson: name,
-        phone,
-        email: email.toLowerCase(),
-        address: address || 'Community Collection Center',
-        serviceAreas: serviceAreas && serviceAreas.length > 0 ? serviceAreas : ['Campus Area', 'Downtown'],
-        supportedCategories: supportedCategories && supportedCategories.length > 0
-          ? supportedCategories
-          : [
-              'Mobile Phones',
-              'Chargers / Cables',
-              'Batteries',
-              'Laptops / Computers',
-              'Keyboards',
-              'Earphones / Headphones'
-            ],
-        description: description || 'Community-focused verified electronic waste recycler.',
-        verificationStatus: 'PENDING'
-      });
-      recyclerData = recycler;
-    }
-
-    const token = generateToken(user._id);
-
-    res.status(201).json({
-      success: true,
-      message:
-        role === 'recycler'
-          ? 'Recycler account registered successfully. Verification is pending approval.'
-          : 'User registered successfully.',
-      data: {
-        token,
-        user: {
-          _id: user._id,
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-          role: user.role,
-          createdAt: user.createdAt
-        },
-        recycler: recyclerData
-      }
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// @desc    Authenticate user & get token
+// @desc    Admin login
 // @route   POST /api/auth/login
 // @access  Public
-const login = async (req, res, next) => {
+exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide both email and password.',
+      });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() }).select('+password');
+
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password.'
+        message: 'Invalid email or password credentials.',
       });
     }
 
@@ -116,96 +36,94 @@ const login = async (req, res, next) => {
     if (!isMatch) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password.'
+        message: 'Invalid email or password credentials.',
       });
-    }
-
-    let recycler = null;
-    if (user.role === 'recycler') {
-      recycler = await Recycler.findOne({ userId: user._id });
     }
 
     const token = generateToken(user._id);
 
     res.status(200).json({
       success: true,
-      message: 'Logged in successfully.',
-      data: {
-        token,
-        user: {
-          _id: user._id,
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-          role: user.role,
-          createdAt: user.createdAt
-        },
-        recycler
-      }
+      message: 'Admin authentication successful.',
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
     });
   } catch (error) {
-    next(error);
+    console.error('[Auth Error]', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during authentication.',
+      error: error.message,
+    });
   }
 };
 
-// @desc    Get current logged in user profile
+// @desc    Get current admin profile
 // @route   GET /api/auth/me
-// @access  Private
-const getMe = async (req, res, next) => {
+// @access  Private (Admin)
+exports.getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
-    let recycler = null;
+    const user = await User.findById(req.user.id);
+    res.status(200).json({
+      success: true,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve profile.',
+      error: error.message,
+    });
+  }
+};
 
-    if (user.role === 'recycler') {
-      recycler = await Recycler.findOne({ userId: user._id });
+// @desc    Update admin password
+// @route   PUT /api/auth/update-password
+// @access  Private (Admin)
+exports.updatePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password and new password are required.',
+      });
     }
 
-    res.status(200).json({
-      success: true,
-      data: {
-        user,
-        recycler
-      }
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+    const user = await User.findById(req.user.id).select('+password');
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
+      return res.status(400).json({
+        success: false,
+        message: 'Incorrect current password.',
+      });
+    }
 
-// @desc    Update current user profile
-// @route   PUT /api/auth/profile
-// @access  Private
-const updateProfile = async (req, res, next) => {
-  try {
-    const { name, phone } = req.body;
-    const user = await User.findById(req.user._id);
-
-    if (name) user.name = name;
-    if (phone) user.phone = phone;
-
+    user.password = newPassword;
     await user.save();
 
+    const token = generateToken(user._id);
+
     res.status(200).json({
       success: true,
-      message: 'Profile updated successfully.',
-      data: {
-        user: {
-          _id: user._id,
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-          role: user.role
-        }
-      }
+      message: 'Password successfully updated.',
+      token,
     });
   } catch (error) {
-    next(error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update password.',
+      error: error.message,
+    });
   }
-};
-
-module.exports = {
-  register,
-  login,
-  getMe,
-  updateProfile
 };

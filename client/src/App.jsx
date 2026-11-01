@@ -1,150 +1,98 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Outlet, Link } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { SettingsProvider } from './context/SettingsContext';
 
-// Layouts & Nav
-import Navbar from './components/Navbar';
-import Footer from './components/Footer';
-import ProtectedRoute from './components/ProtectedRoute';
-import RoleRoute from './components/RoleRoute';
+// Common Public Components
+import Navbar from './components/common/Navbar';
+import Footer from './components/common/Footer';
+import WhatsAppButton from './components/common/WhatsAppButton';
+import ScrollToTop from './components/common/ScrollToTop';
 
 // Public Pages
-import LandingPage from './pages/LandingPage';
-import HowItWorksPage from './pages/HowItWorksPage';
-import AwarenessPage from './pages/AwarenessPage';
-import FindRecyclerPage from './pages/FindRecyclerPage';
-import CommunitySurveyPage from './pages/CommunitySurveyPage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import RecyclerRegisterPage from './pages/RecyclerRegisterPage';
+import HomePage from './pages/HomePage';
+import AboutPage from './pages/AboutPage';
+import ServicesPage from './pages/ServicesPage';
+import ProjectsPage from './pages/ProjectsPage';
+import ProjectDetailPage from './pages/ProjectDetailPage';
+import ContactPage from './pages/ContactPage';
 
-// User Pages
-import UserDashboardPage from './pages/UserDashboardPage';
-import SubmitEWastePage from './pages/SubmitEWastePage';
-import RequestDetailsPage from './pages/RequestDetailsPage';
-import ProfilePage from './pages/ProfilePage';
+// Admin Components & Pages
+import AdminLayout from './components/admin/AdminLayout';
+import AdminLoginPage from './pages/admin/AdminLoginPage';
+import AdminDashboardPage from './pages/admin/AdminDashboardPage';
+import AdminProjectsPage from './pages/admin/AdminProjectsPage';
+import AdminEnquiriesPage from './pages/admin/AdminEnquiriesPage';
+import AdminSettingsPage from './pages/admin/AdminSettingsPage';
 
-// Recycler Pages
-import RecyclerDashboardPage from './pages/RecyclerDashboardPage';
-import RecyclerPickupSpotsPage from './pages/RecyclerPickupSpotsPage';
-import RecyclerProfilePage from './pages/RecyclerProfilePage';
+// Public Layout Container
+const PublicLayout = () => {
+  return (
+    <div className="flex flex-col min-h-screen bg-ivory text-charcoal">
+      <Navbar />
+      <main className="flex-grow">
+        <Outlet />
+      </main>
+      <WhatsAppButton />
+      <Footer />
+    </div>
+  );
+};
 
-// Admin Pages
-import AdminDashboardPage from './pages/AdminDashboardPage';
-import AdminRecordsPage from './pages/AdminRecordsPage';
-import AdminSurveyPage from './pages/AdminSurveyPage';
+// 404 Page
+const NotFoundPage = () => {
+  return (
+    <div className="min-h-[70vh] flex flex-col items-center justify-center px-6 text-center pt-32 pb-24">
+      <span className="text-xs uppercase tracking-[0.28em] text-taupe font-semibold block mb-3">
+        404 — Page Not Found
+      </span>
+      <h1 className="font-serif text-5xl md:text-6xl text-charcoal mb-4">
+        Uncharted Spatial Coordinates
+      </h1>
+      <p className="text-warmgrey max-w-md mx-auto text-base mb-8 font-light">
+        The requested page does not exist or has been relocated within the Vastukruta archive.
+      </p>
+      <Link
+        to="/"
+        className="px-8 py-3.5 bg-charcoal text-ivory hover:bg-taupe transition-colors text-xs uppercase tracking-[0.2em] font-semibold"
+      >
+        Return to Studio Sanctuary
+      </Link>
+    </div>
+  );
+};
 
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <div className="app-layout">
-          <Navbar />
-          <main className="main-content">
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/how-it-works" element={<HowItWorksPage />} />
-              <Route path="/awareness" element={<AwarenessPage />} />
-              <Route path="/find-recycler" element={<FindRecyclerPage />} />
-              <Route path="/survey" element={<CommunitySurveyPage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
-              <Route path="/register-recycler" element={<RecyclerRegisterPage />} />
+      <SettingsProvider>
+        <Router>
+          <ScrollToTop />
+          <Routes>
+            {/* Public Website Routes */}
+            <Route element={<PublicLayout />}>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/services" element={<ServicesPage />} />
+              <Route path="/projects" element={<ProjectsPage />} />
+              <Route path="/projects/:slug" element={<ProjectDetailPage />} />
+              <Route path="/contact" element={<ContactPage />} />
+              <Route path="*" element={<NotFoundPage />} />
+            </Route>
 
-              {/* Community User Protected Routes */}
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <UserDashboardPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/submit-ewaste"
-                element={
-                  <ProtectedRoute>
-                    <SubmitEWastePage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/request/:id"
-                element={
-                  <ProtectedRoute>
-                    <RequestDetailsPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/profile"
-                element={
-                  <ProtectedRoute>
-                    <ProfilePage />
-                  </ProtectedRoute>
-                }
-              />
+            {/* Admin Authentication */}
+            <Route path="/admin/login" element={<AdminLoginPage />} />
 
-              {/* Recycler Protected Routes */}
-              <Route
-                path="/recycler-dashboard"
-                element={
-                  <RoleRoute allowedRoles={['recycler', 'admin']}>
-                    <RecyclerDashboardPage />
-                  </RoleRoute>
-                }
-              />
-              <Route
-                path="/recycler-pickup-spots"
-                element={
-                  <RoleRoute allowedRoles={['recycler', 'admin']}>
-                    <RecyclerPickupSpotsPage />
-                  </RoleRoute>
-                }
-              />
-              <Route
-                path="/recycler-profile"
-                element={
-                  <RoleRoute allowedRoles={['recycler', 'admin']}>
-                    <RecyclerProfilePage />
-                  </RoleRoute>
-                }
-              />
-
-              {/* Admin Protected Routes */}
-              <Route
-                path="/admin-dashboard"
-                element={
-                  <RoleRoute allowedRoles={['admin']}>
-                    <AdminDashboardPage />
-                  </RoleRoute>
-                }
-              />
-              <Route
-                path="/admin/records"
-                element={
-                  <RoleRoute allowedRoles={['admin']}>
-                    <AdminRecordsPage />
-                  </RoleRoute>
-                }
-              />
-              <Route
-                path="/admin/survey"
-                element={
-                  <RoleRoute allowedRoles={['admin']}>
-                    <AdminSurveyPage />
-                  </RoleRoute>
-                }
-              />
-
-              {/* Fallback route */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </main>
-          <Footer />
-        </div>
-      </Router>
+            {/* Protected Admin Dashboard Routes */}
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<AdminDashboardPage />} />
+              <Route path="projects" element={<AdminProjectsPage />} />
+              <Route path="enquiries" element={<AdminEnquiriesPage />} />
+              <Route path="settings" element={<AdminSettingsPage />} />
+            </Route>
+          </Routes>
+        </Router>
+      </SettingsProvider>
     </AuthProvider>
   );
 }

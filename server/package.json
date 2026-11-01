@@ -1,7 +1,7 @@
 {
-  "name": "ecoconnect-server",
+  "name": "vastukruta-server",
   "version": "1.0.0",
-  "description": "Backend API for EcoConnect - Community-Based E-Waste Collection & Recycler Connection Platform",
+  "description": "Backend REST API for Vastukruta Architecture & Interior Design Studio",
   "main": "server.js",
   "type": "commonjs",
   "scripts": {
@@ -11,14 +11,14 @@
     "test": "node --test tests/*.test.js"
   },
   "keywords": [
-    "ewaste",
-    "recycling",
-    "community",
+    "architecture",
+    "interior-design",
+    "vastukruta",
     "express",
     "mongodb",
     "nodejs"
   ],
-  "author": "EcoConnect Team",
+  "author": "Vastukruta Architecture Studio",
   "license": "ISC",
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -26,7 +26,9 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.9.5"
+    "mongoose": "^8.9.5",
+    "multer": "^2.5.0",
+    "nodemailer": "^10.3.1"
   },
   "devDependencies": {
     "supertest": "^7.0.0"

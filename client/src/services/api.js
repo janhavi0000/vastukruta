@@ -1,16 +1,18 @@
 import axios from 'axios';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  baseURL: API_BASE_URL,
   headers: {
-    'Content-Type': 'application/json'
-  }
+    'Content-Type': 'application/json',
+  },
 });
 
-// Request interceptor to attach JWT token
+// Attach JWT token to requests if available
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('ecoconnect_token');
+    const token = localStorage.getItem('vastukruta_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -19,74 +21,64 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor to catch unauthorized 401
+// Response error handler
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      // If token expired or invalid, clear token
-      const currentPath = window.location.pathname;
-      if (!currentPath.includes('/login') && !currentPath.includes('/register')) {
-        localStorage.removeItem('ecoconnect_token');
-        localStorage.removeItem('ecoconnect_user');
+      // If unauthorized and on admin page, remove token
+      if (window.location.pathname.startsWith('/admin') && window.location.pathname !== '/admin/login') {
+        localStorage.removeItem('vastukruta_token');
+        localStorage.removeItem('vastukruta_user');
+        window.location.href = '/admin/login';
       }
     }
     return Promise.reject(error);
   }
 );
 
-// Auth Services
-export const authService = {
-  register: (data) => api.post('/auth/register', data),
+// Authentication API
+export const authAPI = {
   login: (credentials) => api.post('/auth/login', credentials),
   getMe: () => api.get('/auth/me'),
-  updateProfile: (data) => api.put('/auth/profile', data)
+  updatePassword: (passwords) => api.put('/auth/update-password', passwords),
 };
 
-// Requests Services
-export const requestService = {
-  create: (data) => api.post('/requests', data),
-  getMyRequests: () => api.get('/requests/my'),
-  getById: (id) => api.get(`/requests/${id}`),
-  cancel: (id, reason) => api.patch(`/requests/${id}/cancel`, { reason })
+// Projects API
+export const projectAPI = {
+  getAll: (params = {}) => api.get('/projects', { params }),
+  getBySlug: (slugOrId) => api.get(`/projects/${slugOrId}`),
+  create: (data) => api.post('/projects', data),
+  update: (id, data) => api.put(`/projects/${id}`, data),
+  delete: (id) => api.delete(`/projects/${id}`),
 };
 
-// Recycler Services
-export const recyclerService = {
-  getAll: (params) => api.get('/recyclers', { params }),
-  getById: (id) => api.get(`/recyclers/${id}`),
-  registerProfile: (data) => api.post('/recyclers/register', data),
-  getMyProfile: () => api.get('/recyclers/profile/me'),
-  updateAvailability: (id, data) => api.patch(`/recyclers/${id}/availability`, data),
-  getRecyclerRequests: (params) => api.get('/recyclers/requests/all', { params }),
-  updateRequestStatus: (id, data) => api.patch(`/recyclers/requests/${id}/status`, data)
+// Enquiries API
+export const enquiryAPI = {
+  submit: (formData) => api.post('/enquiries', formData),
+  getAll: (params = {}) => api.get('/enquiries', { params }),
+  getById: (id) => api.get(`/enquiries/${id}`),
+  updateStatus: (id, statusData) => api.patch(`/enquiries/${id}/status`, statusData),
+  delete: (id) => api.delete(`/enquiries/${id}`),
+  getStats: () => api.get('/enquiries/stats'),
 };
 
-// Pickup Spots Services
-export const pickupSpotService = {
-  getAll: (params) => api.get('/pickup-spots', { params }),
-  getById: (id) => api.get(`/pickup-spots/${id}`),
-  create: (data) => api.post('/pickup-spots', data),
-  update: (id, data) => api.patch(`/pickup-spots/${id}`, data),
-  delete: (id) => api.delete(`/pickup-spots/${id}`)
+// Studio Settings API
+export const settingAPI = {
+  get: () => api.get('/settings'),
+  update: (data) => api.put('/settings', data),
 };
 
-// Admin Services
-export const adminService = {
-  getStats: () => api.get('/admin/stats'),
-  getUsers: (params) => api.get('/admin/users', { params }),
-  getRecyclers: (params) => api.get('/admin/recyclers', { params }),
-  verifyRecycler: (id, data) => api.patch(`/admin/recyclers/${id}/verify`, data),
-  getAllRequests: (params) => api.get('/admin/requests', { params }),
-  getRecords: (params) => api.get('/admin/records', { params }),
-  getAnalytics: () => api.get('/admin/analytics'),
-  getSurveyAnalytics: () => api.get('/survey/analytics'),
-  getSurveyResponses: () => api.get('/survey/all')
-};
-
-// Survey Services
-export const surveyService = {
-  submit: (data) => api.post('/survey', data)
+// Upload API
+export const uploadAPI = {
+  uploadSingle: (formData) =>
+    api.post('/upload/single', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  uploadMultiple: (formData) =>
+    api.post('/upload/multiple', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
 };
 
 export default api;
